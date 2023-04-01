@@ -34,36 +34,47 @@ if (!class_exists('myCred_Midtrans')):
         
         public function prep_sale($new_transaction = false) {
 
-            require_once(MYCRED_MIDTRANS_CORE_DIR.'Midtrans.php');
+            try {
+                $host = 'app.midtrans.com';
+                if($this->sandbox_mode)
+                    $host = 'app.sandbox.midtrans.com';
 
-            // Set your Merchant Server Key
-            \Midtrans\Config::$serverKey = $this->prefs['server_key'];
-            // Set to Development/Sandbox Environment (default). Set to true for Production Environment (accept real transaction).
-            \Midtrans\Config::$isProduction = false;
-            // Set sanitization on (default)
-            \Midtrans\Config::$isSanitized = true;
-            // Set 3DS transaction for credit card to true
-            \Midtrans\Config::$is3ds = true;
+                $transaction_details = array(
+                    'order_id' => $this->transaction_id,
+                    'gross_amount' => $this->cost
+                );
 
-            $params = array(
-                'transaction_details' => array(
-                    'order_id' => rand(),
-                    'gross_amount' => 10000,
-                ),
-                'payment_type' => 'gopay',
-                'gopay' => array(
-                    'enable_callback' => true,                // optional
-                    'callback_url' => 'someapps://callback'   // optional
-                )
-            );
+                $request_body = 
+                    json_encode(
+                        array(
+                            'transaction_details' => $transaction_details
+                        )
+                    );
 
-            var_dump(\Midtrans\Snap::createTransaction($params));
-            
-            $paymentUrl = \Midtrans\Snap::createTransaction($params)->redirect_url;
+            //    var_dump($request_body);
 
-            $this->redirect_to = $paymentUrl;
-    
+                $create_snap_transactions = 
+                    wp_remote_post('https://'.$host.'/snap/v1/transactions',
+                        array(
+                            'method' => 'POST',
+                            'headers' =>
+                                array(
+                                    'Accept' => 'application/json',
+                                    'Content-Type' => 'application/json',
+                                    'Authorization' => 'Basic ' . base64_encode($this->prefs['server_key'] . ':')
+                                ),
+                            'body' => $request_body
+                        )
+                );
+            } catch( \Exception $e) {
+                $this->errors[] = $e->getMessage();
+            }
 
+            if(empty( $this->errors)) {
+                var_dump(json_decode($create_snap_transactions['body'])['redirect_url']);
+                // var_dump($create_snap_transactions);
+                // $this->redirect_to = json_decode($create_snap_transactions['body'])->data->url;
+            }
 
         }
 
