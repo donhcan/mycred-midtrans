@@ -67,6 +67,13 @@ if (!class_exists('myCred_Midtrans')):
 
         }
 
+        public function form() {
+        ?>
+            <h1>Custom Checkout<h1>
+        <?php
+        }
+
+
         public function checkout_page_body()
         {
             echo wp_kses_post( $this->checkout_header() );
