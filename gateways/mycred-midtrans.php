@@ -51,8 +51,6 @@ if (!class_exists('myCred_Midtrans')):
                         )
                     );
 
-            //    var_dump($request_body);
-
                 $create_snap_transactions = 
                     wp_remote_post('https://'.$host.'/snap/v1/transactions',
                         array(
@@ -71,9 +69,8 @@ if (!class_exists('myCred_Midtrans')):
             }
 
             if(empty( $this->errors)) {
-                var_dump(json_decode($create_snap_transactions['body'])['redirect_url']);
-                // var_dump($create_snap_transactions);
-                // $this->redirect_to = json_decode($create_snap_transactions['body'])->data->url;
+                $paymentUrl = json_decode(wp_remote_retrieve_body( $create_snap_transactions ))->redirect_url;
+                header('Location: '.$paymentUrl);
             }
 
         }

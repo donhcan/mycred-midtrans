@@ -46,8 +46,6 @@ if (!class_exists('buyCred_Midtrans_Gateway_Core')):
             $this->define('MYCRED_MIDTRANS', __FILE__);
             $this->define('MYCRED_MIDTRANS_ROOT_DIR', plugin_dir_path(MYCRED_MIDTRANS));
             $this->define('MYCRED_MIDTRANS_GATEWAY_DIR', MYCRED_MIDTRANS_ROOT_DIR . 'gateways/');
-            $this->define('MYCRED_MIDTRANS_CORE_DIR', MYCRED_MIDTRANS_ROOT_DIR . 'core/');
-
         }
 
         public function mycred()
