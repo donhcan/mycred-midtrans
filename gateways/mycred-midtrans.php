@@ -32,13 +32,26 @@ if (!class_exists('myCred_Midtrans')):
             );
         }
         
-        public function prep_sale($new_transaction = false) {
+        public function returning() {
 
-            try {
-                $host = 'app.midtrans.com';
+			if ( isset( $_REQUEST['tx'] ) && isset( $_REQUEST['st'] ) && $_REQUEST['st'] == 'Completed' ) {
+				$this->get_page_header( __( 'Success', 'mycred' ), $this->get_thankyou() );
+				echo '<h1 style="text-align:center;">' . esc_html__( 'Thank you for your purchase', 'mycred' ) . '</h1>';
+				$this->get_page_footer();
+				exit;
+			}
+
+		}
+    
+        
+        public function prep_sale($new_transaction = false) {
+            $host = 'app.midtrans.com';
                 if($this->sandbox_mode)
                     $host = 'app.sandbox.midtrans.com';
+            $snapURL= 'https://'.$host.'/snap/snap.js';
 
+            try {
+                
                 $transaction_details = array(
                     'order_id' => $this->transaction_id,
                     'gross_amount' => $this->cost
@@ -69,39 +82,43 @@ if (!class_exists('myCred_Midtrans')):
             }
 
             if(empty( $this->errors)) {
-                $paymentUrl = json_decode(wp_remote_retrieve_body( $create_snap_transactions ))->redirect_url;
-                header('Location: '.$paymentUrl);
+                $snapToken =  json_decode(wp_remote_retrieve_body( $create_snap_transactions ))->token;
+                //$paymentUrl = json_decode(wp_remote_retrieve_body( $create_snap_transactions ))->redirect_url;
+                // header('Location: '.$paymentUrl);
+                ?>
+                <html>
+                    <head>
+                <script type="text/javascript" src='<?=$snapURL?>' 
+                 data-client-key='<?=$this->prefs['client_key']?>'></script>
+            </head>
+            <body>
+            <script type="text/javascript">
+                 window.snap.pay('<?=$snapToken?>', {
+          onSuccess: function(result){
+            /* You may add your own implementation here */
+            alert("payment success!"); console.log(result);
+          },
+          onPending: function(result){
+            /* You may add your own implementation here */
+            alert("wating your payment!"); console.log(result);
+          },
+          onError: function(result){
+            /* You may add your own implementation here */
+            alert("payment failed!"); console.log(result);
+          },
+          onClose: function(){
+            /* You may add your own implementation here */
+            alert('you closed the popup without finishing the payment');
+          }
+        });
+                </script>
+            </body>
+                </html>
+               <?php
             }
 
         }
 
-        public function checkout_page_body()
-        {
-            echo wp_kses_post( $this->checkout_header() );
-			echo wp_kses_post( $this->checkout_logo( false ) );
-
-			echo wp_kses_post( $this->checkout_order() );
-			echo wp_kses_post( $this->checkout_cancel() );
-
-			echo wp_kses( 
-				$this->checkout_footer(), 
-				array( 
-					'div' => array( 'class' => array() ), 
-					'button' => array( 
-						'type' => array(), 
-						'id' => array(), 
-						'data-act' => array(), 
-						'data-value' => array(), 
-						'class' => array(), 
-					),
-					'input' => array( 
-						'type' => array(), 
-						'name' => array(), 
-						'value' => array()
-					)
-				) 
-			);
-        }
 
         public function preferences()
         {
