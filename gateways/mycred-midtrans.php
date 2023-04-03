@@ -31,18 +31,15 @@ if (!class_exists('myCred_Midtrans')):
                 $gateway_prefs
             );
         }
-        
+
         public function returning() {
-
-			if ( isset( $_REQUEST['tx'] ) && isset( $_REQUEST['st'] ) && $_REQUEST['st'] == 'Completed' ) {
-				$this->get_page_header( __( 'Success', 'mycred' ), $this->get_thankyou() );
-				echo '<h1 style="text-align:center;">' . esc_html__( 'Thank you for your purchase', 'mycred' ) . '</h1>';
-				$this->get_page_footer();
-				exit;
-			}
-
-		}
-    
+         if(isset($_REQUEST['status_code'])&&$_REQUEST['status_code']==200){
+            $pending_post_id = $_REQUEST['order_id'];
+            $pending_payment = $this->get_pending_payment($pending_post_id );
+            $this->complete_payment($pending_payment);
+            $this->trash_pending_payment( $pending_post_id);
+         }
+        }
         
         public function prep_sale($new_transaction = false) {
             $host = 'app.midtrans.com';
@@ -57,10 +54,15 @@ if (!class_exists('myCred_Midtrans')):
                     'gross_amount' => $this->cost
                 );
 
+                $callbacks = array(
+                    'finish' => $this->get_thankyou()
+                );
+
                 $request_body = 
                     json_encode(
                         array(
-                            'transaction_details' => $transaction_details
+                            'transaction_details' => $transaction_details,
+                            'callbacks' => $callbacks
                         )
                     );
 
@@ -93,24 +95,7 @@ if (!class_exists('myCred_Midtrans')):
             </head>
             <body>
             <script type="text/javascript">
-                 window.snap.pay('<?=$snapToken?>', {
-          onSuccess: function(result){
-            /* You may add your own implementation here */
-            alert("payment success!"); console.log(result);
-          },
-          onPending: function(result){
-            /* You may add your own implementation here */
-            alert("wating your payment!"); console.log(result);
-          },
-          onError: function(result){
-            /* You may add your own implementation here */
-            alert("payment failed!"); console.log(result);
-          },
-          onClose: function(){
-            /* You may add your own implementation here */
-            alert('you closed the popup without finishing the payment');
-          }
-        });
+                 window.snap.pay('<?=$snapToken?>');
                 </script>
             </body>
                 </html>
