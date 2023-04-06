@@ -36,7 +36,7 @@ if (!class_exists('myCred_Midtrans')):
          if(isset($_REQUEST['status_code'])&&$_REQUEST['status_code']==200){
             $pending_post_id = $_REQUEST['order_id'];
             $pending_payment = $this->get_pending_payment($pending_post_id );
-            $this->complete_payment($pending_payment);
+            $this->complete_payment($pending_payment,$pending_post_id);
             $this->trash_pending_payment( $pending_post_id);
          }
         }
