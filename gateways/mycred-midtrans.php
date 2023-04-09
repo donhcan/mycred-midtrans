@@ -23,6 +23,7 @@ if (!class_exists('myCred_Midtrans')):
                         'client_key' => '',
                         'server_key' => '',
                         'payment_methods' => '',
+                        'snapToken' => '',
                         'currency' => 'IDR',
                         'item_name' => __('Purchase of myCRED %plural%', 'mycred'),
                         'exchange' => $default_exchange
@@ -37,7 +38,49 @@ if (!class_exists('myCred_Midtrans')):
         }
         
         public function prep_sale($new_transaction = false) {
-           
+
+            $host = 'app.midtrans.com';
+            if($this->sandbox_mode)
+                $host = 'app.sandbox.midtrans.com';
+            try {
+            
+            $transaction_details = array(
+                'order_id' => $this->transaction_id,
+                'gross_amount' => $this->cost
+            );
+
+            $callbacks = array(
+                'finish' => $this->get_thankyou()
+            );
+
+            $request_body = 
+                json_encode(
+                    array(
+                        'transaction_details' => $transaction_details,
+                        'callbacks' => $callbacks
+                    )
+                );
+
+            $create_snap_transactions = 
+                wp_remote_post('https://'.$host.'/snap/v1/transactions',
+                    array(
+                        'method' => 'POST',
+                        'headers' =>
+                            array(
+                                'Accept' => 'application/json',
+                                'Content-Type' => 'application/json',
+                                'Authorization' => 'Basic ' . base64_encode($this->prefs['server_key'] . ':')
+                            ),
+                        'body' => $request_body
+                    )
+            );
+        } catch( \Exception $e) {
+            $this->errors[] = $e->getMessage();
+        }
+
+        if(empty( $this->errors)) 
+            $this->prefs['snapToken'] =  json_decode(wp_remote_retrieve_body( $create_snap_transactions ))->token;
+         
         }
 
         public function ajax_buy() {
@@ -52,37 +95,90 @@ if (!class_exists('myCred_Midtrans')):
 			// Return a JSON response
 			$this->send_json( $content );
 
+            ?>
+            <script type="text/javascript" src='<?=$snapURL?>' 
+                 data-client-key='<?=$this->prefs['client_key']?>'></script>
+            <script>
+             var payButton = document.getElementById('checkout-action-button');
+             payButton.onclick = function(event) {
+                snap.pay('<?=$this->prefs['snapToken']?>');
+             }
+             </script>
+            <?php
+           
+
 		}
 
-        public function checkout_page_body() {
-          
-        
-            echo wp_kses_post( $this->checkout_header() );
-			echo wp_kses_post( $this->checkout_logo( false ) );
-
-			echo wp_kses_post( $this->checkout_order() );
-			echo wp_kses_post( $this->checkout_cancel() );
-
-			echo wp_kses( 
-				$this->checkout_footer(), 
-				array( 
-					'div' => array( 'class' => array() ), 
-					'button' => array( 
-						'type' => array(), 
-						'id' => array(), 
-						'data-act' => array(), 
-						'data-value' => array(), 
-						'class' => array(), 
-					),
-					'input' => array( 
-						'type' => array(), 
-						'name' => array(), 
-						'value' => array()
-					)
-				) 
-			);
-
+        public function checkout_javascript(){
+            $host = 'app.midtrans.com';
+            if($this->sandbox_mode)
+                $host = 'app.sandbox.midtrans.com';
+            $snapURL= 'https://'.$host.'/snap/snap.js';
+            ?>
+            <script type="text/javascript" src='<?=$snapURL?>' 
+                 data-client-key='<?=$this->prefs['client_key']?>'></script>
+            <script>
+             var payButton = document.getElementById('checkout-action-button');
+             payButton.onclick = function(event) {
+                snap.pay('<?=$this->prefs['snapToken']?>');
+             }
+             </script>
+            <?php
+            
            
+        }
+
+        public function checkout_page_body() {
+
+            $host = 'app.midtrans.com';
+            if($this->sandbox_mode)
+                $host = 'app.sandbox.midtrans.com';
+            $snapURL= 'https://'.$host.'/snap/snap.js';
+
+            $content  = $this->checkout_header();
+			$content .= $this->checkout_logo();
+			$content .= $this->checkout_order();
+			$content .= $this->checkout_cancel();
+			$content .= $this->checkout_footer();
+
+            $content .= ' <script type="text/javascript" src='. $snapURL .'  data-client-key='. $this->prefs['client_key'] .'></script>';
+            $content .= '<script>';
+            $content .= '  var payButton = document.getElementById("checkout-action-button");';
+            $content .= ' payButton.onclick = function(event) {
+                snap.pay("'.$this->prefs['snapToken'] .'");
+             }';
+            $content .= '</script>';
+
+            echo $content;
+        
+            // echo wp_kses_post( $this->checkout_header() );
+			// echo wp_kses_post( $this->checkout_logo( false ) );
+
+			// echo wp_kses_post( $this->checkout_order() );
+			// echo wp_kses_post( $this->checkout_cancel() );
+
+			// echo wp_kses( 
+			// 	$this->checkout_footer(), 
+			// 	array( 
+			// 		'div' => array( 'class' => array() ), 
+			// 		'button' => array( 
+			// 			'type' => array(), 
+			// 			'id' => array(), 
+			// 			'data-act' => array(), 
+			// 			'data-value' => array(), 
+			// 			'class' => array(), 
+			// 		),
+			// 		'input' => array( 
+			// 			'type' => array(), 
+			// 			'name' => array(), 
+			// 			'value' => array()
+			// 		)
+			// 	) 
+			// );
+
+          //  echo wp_kses_post( $this->checkout_javascript() );
+            
+          
 
               
         }
