@@ -91,92 +91,73 @@ if (!class_exists('myCred_Midtrans')):
 			$content .= $this->checkout_order();
 			$content .= $this->checkout_cancel();
 			$content .= $this->checkout_footer();
+            $content .= $this->checkout_javascript();
 
 			// Return a JSON response
 			$this->send_json( $content );
 
-            ?>
-            <script type="text/javascript" src='<?=$snapURL?>' 
-                 data-client-key='<?=$this->prefs['client_key']?>'></script>
-            <script>
-             var payButton = document.getElementById('checkout-action-button');
-             payButton.onclick = function(event) {
-                snap.pay('<?=$this->prefs['snapToken']?>');
-             }
-             </script>
-            <?php
-           
-
 		}
 
         public function checkout_javascript(){
-            $host = 'app.midtrans.com';
-            if($this->sandbox_mode)
-                $host = 'app.sandbox.midtrans.com';
-            $snapURL= 'https://'.$host.'/snap/snap.js';
-            ?>
-            <script type="text/javascript" src='<?=$snapURL?>' 
-                 data-client-key='<?=$this->prefs['client_key']?>'></script>
-            <script>
-             var payButton = document.getElementById('checkout-action-button');
-             payButton.onclick = function(event) {
-                snap.pay('<?=$this->prefs['snapToken']?>');
-             }
-             </script>
-            <?php
-            
-           
-        }
-
-        public function checkout_page_body() {
+            $content = '';
 
             $host = 'app.midtrans.com';
             if($this->sandbox_mode)
                 $host = 'app.sandbox.midtrans.com';
             $snapURL= 'https://'.$host.'/snap/snap.js';
 
-            $content  = $this->checkout_header();
-			$content .= $this->checkout_logo();
-			$content .= $this->checkout_order();
-			$content .= $this->checkout_cancel();
-			$content .= $this->checkout_footer();
 
             $content .= ' <script type="text/javascript" src='. $snapURL .'  data-client-key='. $this->prefs['client_key'] .'></script>';
             $content .= '<script>';
             $content .= '  var payButton = document.getElementById("checkout-action-button");';
             $content .= ' payButton.onclick = function(event) {
                 snap.pay("'.$this->prefs['snapToken'] .'");
-             }';
+            }';
             $content .= '</script>';
+
+
+            return apply_filters( 'mycred_buycred_checkout_javascript', $content, $this );
+            
+           
+        }
+
+        public function checkout_page_body() {
+
+            $content  = $this->checkout_header();
+			$content .= $this->checkout_logo();
+			$content .= $this->checkout_order();
+			$content .= $this->checkout_cancel();
+			$content .= $this->checkout_footer();
+            $content .= $this->checkout_javascript();
 
             echo $content;
         
-            // echo wp_kses_post( $this->checkout_header() );
-			// echo wp_kses_post( $this->checkout_logo( false ) );
+        //     echo wp_kses_post( $this->checkout_header() );
+		// 	echo wp_kses_post( $this->checkout_logo( false ) );
 
-			// echo wp_kses_post( $this->checkout_order() );
-			// echo wp_kses_post( $this->checkout_cancel() );
+		// 	echo wp_kses_post( $this->checkout_order() );
+		// 	echo wp_kses_post( $this->checkout_cancel() );
 
-			// echo wp_kses( 
-			// 	$this->checkout_footer(), 
-			// 	array( 
-			// 		'div' => array( 'class' => array() ), 
-			// 		'button' => array( 
-			// 			'type' => array(), 
-			// 			'id' => array(), 
-			// 			'data-act' => array(), 
-			// 			'data-value' => array(), 
-			// 			'class' => array(), 
-			// 		),
-			// 		'input' => array( 
-			// 			'type' => array(), 
-			// 			'name' => array(), 
-			// 			'value' => array()
-			// 		)
-			// 	) 
-			// );
+		// 	echo wp_kses( 
+		// 		$this->checkout_footer(), 
+		// 		array( 
+		// 			'div' => array( 'class' => array() ), 
+		// 			'button' => array( 
+		// 				'type' => array(), 
+		// 				'id' => array(), 
+		// 				'data-act' => array(), 
+		// 				'data-value' => array(), 
+		// 				'class' => array(), 
+		// 			),
+		// 			'input' => array( 
+		// 				'type' => array(), 
+		// 				'name' => array(), 
+		// 				'value' => array()
+		// 			)
+		// 		) 
+		// 	);
 
-          //  echo wp_kses_post( $this->checkout_javascript() );
+        //    echo wp_kses_post( $this->checkout_javascript() );
             
           
 
