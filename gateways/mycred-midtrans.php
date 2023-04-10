@@ -33,8 +33,53 @@ if (!class_exists('myCred_Midtrans')):
             );
         }
 
-        public function returning() {
+  
 
+        public function returning() {
+            if(isset($_REQUEST['status_code'])&&$_REQUEST['status_code']==200){
+                $host = 'api.midtrans.com';
+                if($this->sandbox_mode)
+                    $host = 'api.sandbox.midtrans.com';
+                
+                $pending_post_id = $_REQUEST['order_id'];
+                $pending_payment = $this->get_pending_payment($pending_post_id);
+
+                if($pending_payment!=null)
+                {
+                  //  var_dump($pending_payment);
+                  try {
+                    $order_id = $pending_post_id;
+                    $retrieve_status = wp_remote_get( 'https://'.$host.'/v2/'.$order_id.'/status', 
+                        array(
+                            'headers'     => 
+                            array(
+                                'Accept' => 'application/json',
+                                'Content-Type' => 'application/json',
+                                'Authorization' => 'Basic ' . base64_encode($this->prefs['server_key'] . ':')
+                            ),
+                        ) 
+                     );
+                    
+                     $status =  json_decode(wp_remote_retrieve_body( $retrieve_status ))->status_code;
+    
+                } catch ( \Exception $e ) {
+    
+                    $new_call[] = $e->getMessage();
+    
+                }
+
+                
+    
+                if ( empty( $new_call ) && $status == '200' ) {
+                    $this->complete_payment($pending_payment,$pending_post_id);
+                    $this->trash_pending_payment( $pending_post_id);
+                }
+                }
+                    
+    
+       
+    
+            }
         }
         
         public function prep_sale($new_transaction = false) {
