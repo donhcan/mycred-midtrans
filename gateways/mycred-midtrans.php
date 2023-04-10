@@ -34,9 +34,9 @@ if (!class_exists('myCred_Midtrans')):
         }
 
   
-
+    
         public function returning() {
-            if(isset($_REQUEST['status_code'])&&$_REQUEST['status_code']==200){
+            if(isset($_REQUEST['order_id'])){
                 $host = 'api.midtrans.com';
                 if($this->sandbox_mode)
                     $host = 'api.sandbox.midtrans.com';
@@ -94,15 +94,23 @@ if (!class_exists('myCred_Midtrans')):
                 'gross_amount' => $this->cost
             );
 
+
             $callbacks = array(
                 'finish' => $this->get_thankyou()
+            );
+
+            $gopay = array(
+                'enable_callback' => true,
+                'callback_url' => $this->get_thankyou()
             );
 
             $request_body = 
                 json_encode(
                     array(
                         'transaction_details' => $transaction_details,
-                        'callbacks' => $callbacks
+                        'callbacks' => $callbacks,
+                       // 'enabled_payments' =>["gopay"],
+                        'gopay' => $gopay
                     )
                 );
 
@@ -156,7 +164,7 @@ if (!class_exists('myCred_Midtrans')):
             $content .= '<script>';
             $content .= '  var payButton = document.getElementById("checkout-action-button");';
             $content .= ' payButton.onclick = function(event) {
-                snap.pay("'.$this->prefs['snapToken'] .'");
+                snap.pay("'.$this->prefs['snapToken'] .'",{uiMode: "auto"});
             }';
             $content .= '</script>';
 
