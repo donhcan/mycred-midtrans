@@ -56,8 +56,16 @@ if (!class_exists('buyCred_Midtrans_Gateway_Core')):
 
             add_filter('mycred_setup_gateways', array($this, 'add_gateway'));
             add_action('mycred_buycred_load_gateways', array($this, 'load_gateways'));
+            add_filter('mycred_buycred_refs', array($this, 'add_refs'));
 
 
+
+        }
+
+        public function add_refs($addons)
+        {
+            $addons['buy_creds_with_mycred_midtrans'] = __('buyCRED Purchase (MyCred Midtrans)', 'mycred');
+            return $addons;
         }
 
         public function load_gateways()
