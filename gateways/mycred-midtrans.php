@@ -36,13 +36,16 @@ if (!class_exists('myCred_Midtrans')):
   
     
         public function returning() {
+            $errors =  array();
             if(isset($_REQUEST['order_id'])){
                 $host = 'api.midtrans.com';
                 if($this->sandbox_mode)
                     $host = 'api.sandbox.midtrans.com';
                 
                 $pending_post_id = $_REQUEST['order_id'];
-                $pending_payment = $this->get_pending_payment($pending_post_id);
+                $parts = explode("-", $pending_post_id);
+                $first_part = $parts[0];
+                $pending_payment = $this->get_pending_payment($first_part);
 
                 if($pending_payment!=null)
                 {
@@ -64,15 +67,15 @@ if (!class_exists('myCred_Midtrans')):
     
                 } catch ( \Exception $e ) {
     
-                    $new_call[] = $e->getMessage();
+                    $errors[] = $e->getMessage();
     
                 }
 
                 
     
-                if ( empty( $new_call ) && $status == '200' ) {
-                    $this->complete_payment($pending_payment,$pending_post_id);
-                    $this->trash_pending_payment( $pending_post_id);
+                if ( empty( $errors ) && $status == '200' ) {
+                    $this->complete_payment($pending_payment,$first_part);
+                    $this->trash_pending_payment( $first_part);
                 }
                 }
                     
@@ -87,12 +90,16 @@ if (!class_exists('myCred_Midtrans')):
             $host = 'app.midtrans.com';
             if($this->sandbox_mode)
                 $host = 'app.sandbox.midtrans.com';
+            
+            $errors = array();
+
             try {
             
             $transaction_details = array(
-                'order_id' => $this->transaction_id,
+                'order_id' => $this->transaction_id .'-mycred-'.time().'-'.rand(),
                 'gross_amount' => $this->cost
             );
+
 
 
             $callbacks = array(
@@ -128,11 +135,17 @@ if (!class_exists('myCred_Midtrans')):
                     )
             );
         } catch( \Exception $e) {
-            $this->errors[] = $e->getMessage();
+            $errors[] = $e->getMessage();
+          
+            
         }
 
-        if(empty( $this->errors)) 
-            $this->prefs['snapToken'] =  json_decode(wp_remote_retrieve_body( $create_snap_transactions ))->token;
+        if(empty( $errors)) 
+        {
+            $data = json_decode(wp_remote_retrieve_body( $create_snap_transactions ));
+     
+            $this->prefs['snapToken'] =  $data->token;
+        }
          
         }
 
